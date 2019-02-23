@@ -25,26 +25,23 @@ class Grid(object):
         self.board[x][y] = random.randrange(1, 3) * 2
 
     def move(self):
-        def collapse_row(row):
-            for i in range(len(row) - 1):
-                if row[i] == row[i + 1]:
-                    row[i] *= 2
-                    row[i + 1] = 0
-
-        def shift_elem(row: List):
+        def resolve_row(row: List)->List:
             j = 0
+            merged = False
             for i in range(len(row)):
                 if row[i] != 0:
 
                     row[j] = row[i]
                     if i != j:
                         row[i] = 0
-                    j += 1
-
-        def resolve_row(row: List)->List:
-            shift_elem(row)
-            collapse_row(row)
-            shift_elem(row)
+                    if not merged and j > 0 and row[j] == row[j - 1]:
+                        changed = 1;
+                        row[j - 1] *= 2;
+                        row[j] = 0;
+                        merged = True;
+                    else:
+                        merged = False;
+                        j += 1
             return row
 
         move = input("> ")
@@ -87,9 +84,15 @@ if __name__ == "__main__":
             game.generate_elem()
             print(game)
             game.move()
-            os.system('cls')
+            if os.name == "posix":
+                os.system("clear")
+            else:
+                os.system("cls")
             print(game)
-            os.system("cls")
+            if os.name == "posix":
+                os.system("clear")
+            else:
+                os.system("cls")
         else:
             print("Game Over")
             exit(0)
