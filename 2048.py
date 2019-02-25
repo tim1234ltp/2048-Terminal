@@ -11,7 +11,10 @@ class Grid(object):
             [0, 0, 0, 0],
             [0, 0, 0, 0]
         ]
-
+        self.shifter_left = ConcreteShiftLeft()
+        self.shifter_right = ConcreteShiftRight()
+        self.shifter_up = ConcreteShiftUp()
+        self.shifter_down = ConcreteShiftDown()
     def check_finished(self):
         for x in self.board:
             for y in x:
@@ -25,46 +28,15 @@ class Grid(object):
             x, y = random.randrange(4), random.randrange(4)
         self.board[x][y] = random.randrange(1, 3) * 2
 
-    def move(self):
-        def resolve_row(row: List)->List:
-            j = 0
-            merged = False
-            for i in range(len(row)):
-                if row[i] != 0:
-                    row[j] = row[i]
-                    if i != j:
-                        row[i] = 0
-                    if not merged and j > 0 and row[j] == row[j - 1]:
-                        changed = 1;
-                        row[j - 1] *= 2;
-                        row[j] = 0;
-                        merged = True;
-                    else:
-                        merged = False;
-                        j += 1
-            return row
-
-        move = input("> ")
-        if move == "a":
-            for i in range(4):
-                self.board[i] = resolve_row(self.board[i])
-
-        if move == "d":
-            for i in range(4):
-                self.board[i] = resolve_row(self.board[i][::-1])
-                self.board[i] = self.board[i][::-1]
-
-        if move == "w":
-            self.board[:] = [list(a) for a in [*zip(*self.board)][::-1]]
-            for i in range(4):
-                self.board[i] = resolve_row(self.board[i])
-            self.board[:] = [list(a) for a in zip(*self.board[::-1])]
-
-        if move == "s":
-            self.board[:] = [list(a) for a in zip(*self.board[::-1])]
-            for i in range(4):
-                self.board[i] = resolve_row(self.board[i])
-            self.board[:] = [list(a) for a in [*zip(*self.board)][::-1]]
+    def move(self, direction: str):
+        if direction == "a":
+          self.board = self.shifter_left.interface_shift(self.board)
+        if direction == "d":
+          self.board = self.shifter_right.interface_shift(self.board)
+        if direction == "w":
+          self.board = self.shifter_up.interface_shift(self.board)
+        if direction == "s":
+          self.board = self.shifter_down.interface_shift(self.board)
 
     def __str__(self):
         result = ""
@@ -75,6 +47,64 @@ class Grid(object):
             result += "|\n"
         result += "+----+----+----+----+\n"
         return result
+
+    
+class AbstractShifter(metaclass=abc.ABCMeta):
+  @abc.abstractmethod
+  def interface_shift(self, board):
+      pass
+
+  def resolve_row(self, row: List)->List:
+    j = 0
+    merged = False
+    for i in range(len(row)):
+        if row[i] != 0:
+            row[j] = row[i]
+            if i != j:
+                row[i] = 0
+            if not merged and j > 0 and row[j] == row[j - 1]:
+                changed = 1;
+                row[j - 1] *= 2;
+                row[j] = 0;
+                merged = True;
+            else:
+                merged = False;
+                j += 1
+    return row
+
+
+class ConcreteShiftLeft(AbstractShifter):
+  def interface_shift(self, board):
+    for i in range(4):
+      board[i] = self.resolve_row(board[i])
+    return board
+
+
+class ConcreteShiftRight(AbstractShifter):
+  def interface_shift(self, board):
+    for i in range(4):
+      board[i] = self.resolve_row(board[i][::-1])
+      board[i] = board[i][::-1]
+    return board
+
+
+class ConcreteShiftUp(AbstractShifter):
+  def interface_shift(self, board):
+    board[:] = [list(a) for a in [*zip(*board)][::-1]]
+    for i in range(4):
+      board[i] = self.resolve_row(board[i])
+    board[:] = [list(a) for a in zip(*board[::-1])]
+    return board
+
+
+class ConcreteShiftDown(AbstractShifter):
+  def interface_shift(self, board):
+    board[:] = [list(a) for a in zip(*board[::-1])]
+    for i in range(4):
+      board[i] = self.resolve_row(board[i])
+    board[:] = [list(a) for a in [*zip(*board)][::-1]]
+    return board
+
 
 class AbstractOSFactory(metaclass=abc.ABCMeta):
   @abc.abstractmethod
@@ -87,6 +117,7 @@ class ConcreteFactoryPosix(AbstractOSFactory):
   def create_command(self):
       return ConcreteCommandPosix()
 
+    
 class AbstractCommand(metaclass=abc.ABCMeta):
   @abc.abstractmethod
   def interface_clear_command(self):
@@ -111,7 +142,8 @@ if __name__ == "__main__":
         if not game.check_finished():
             game.generate_elem()
             print(game)
-            game.move()
+            direction = input("> ")
+            game.move(direction)
             commander.interface_clear_command()
             print(game)
             commander.interface_clear_command()
