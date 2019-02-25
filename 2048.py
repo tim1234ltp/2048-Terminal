@@ -1,5 +1,6 @@
 import random
 import os
+import abc
 from typing import List
 
 class Grid(object):
@@ -30,7 +31,6 @@ class Grid(object):
             merged = False
             for i in range(len(row)):
                 if row[i] != 0:
-
                     row[j] = row[i]
                     if i != j:
                         row[i] = 0
@@ -76,23 +76,45 @@ class Grid(object):
         result += "+----+----+----+----+\n"
         return result
 
+class AbstractOSFactory(metaclass=abc.ABCMeta):
+  @abc.abstractmethod
+  def create_command(self):
+    pass
+class ConcreteFactoryWin(AbstractOSFactory):
+  def create_command(self):
+      return ConcreteCommandWin()
+class ConcreteFactoryPosix(AbstractOSFactory):
+  def create_command(self):
+      return ConcreteCommandPosix()
+
+class AbstractCommand(metaclass=abc.ABCMeta):
+  @abc.abstractmethod
+  def interface_clear_command(self):
+      pass
+class ConcreteCommandWin(AbstractCommand):
+  def interface_clear_command(self):
+      os.system("cls")
+class ConcreteCommandPosix(AbstractCommand):
+  def interface_clear_command(self):
+      os.system("clear")
+
+def init_game():
+  game = Grid()
+  if os.name == "posix":
+    return game, ConcreteFactoryPosix().create_command()
+  else:
+    return game, ConcreteFactoryWin().create_command()
 
 if __name__ == "__main__":
-    game = Grid()
+    game, commander = init_game()
     while True:
         if not game.check_finished():
             game.generate_elem()
             print(game)
             game.move()
-            if os.name == "posix":
-                os.system("clear")
-            else:
-                os.system("cls")
+            commander.interface_clear_command()
             print(game)
-            if os.name == "posix":
-                os.system("clear")
-            else:
-                os.system("cls")
+            commander.interface_clear_command()
         else:
             print("Game Over")
             exit(0)
